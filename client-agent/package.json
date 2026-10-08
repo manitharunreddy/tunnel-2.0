@@ -1,0 +1,21 @@
+{
+  "name": "client-agent",
+  "version": "1.0.0",
+  "main": "dist-electron/client-agent/electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && tsc -p electron/tsconfig.json",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "electron": "^28.2.1",
+    "vite": "^5.1.0",
+    "typescript": "^5.3.3",
+    "@types/ws": "^8.5.10",
+    "@types/node": "^20.11.16"
+  }
+}

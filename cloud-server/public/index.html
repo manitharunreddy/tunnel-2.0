@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cloud Server Dashboard</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f9; padding: 20px; max-width: 1000px; margin: 0 auto; }
+    h1, h2 { color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #eee; }
+    .status-online { color: green; font-weight: bold; }
+    .status-offline { color: red; font-weight: bold; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: inline-block; width: 150px; }
+    .form-group input { padding: 5px; width: 200px; }
+    button { padding: 8px 16px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    button:hover { background: #0056b3; }
+    .btn-danger { background: #dc3545; padding: 4px 8px; }
+    .btn-danger:hover { background: #c82333; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Cloud Dashboard</h1>
+  
+  <div class="card">
+    <h2>Connected Agents</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Agent ID</th>
+          <th>Status</th>
+          <th>Last Seen</th>
+          <th>Active Connections</th>
+        </tr>
+      </thead>
+      <tbody id="agents-table">
+        <!-- Populated by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Open a New Tunnel</h2>
+    <div class="form-group">
+      <label>Agent ID:</label>
+      <input type="text" id="input-agent" placeholder="e.g., agent-001" value="agent-001">
+    </div>
+    <div class="form-group">
+      <label>Public Cloud Port:</label>
+      <input type="number" id="input-public-port" placeholder="e.g., 8080">
+    </div>
+    <div class="form-group">
+      <label>Local Target Host:</label>
+      <input type="text" id="input-target-host" placeholder="e.g., 127.0.0.1" value="127.0.0.1">
+    </div>
+    <div class="form-group">
+      <label>Local Target Port:</label>
+      <input type="number" id="input-target-port" placeholder="e.g., 5000">
+    </div>
+    <button onclick="createMapping()">Open Tunnel</button>
+  </div>
+
+  <div class="card">
+    <h2>Active Tunnels / Port Mappings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Cloud Port</th>
+          <th>Agent ID</th>
+          <th>Target (Host:Port)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="mappings-table">
+        <!-- Populated by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function fetchAgents() {
+      try {
+        const res = await fetch('/api/agents');
+        const agents = await res.json();
+        const tbody = document.getElementById('agents-table');
+        tbody.innerHTML = '';
+        
+        agents.forEach(agent => {
+          const tr = document.createElement('tr');
+          let lastSeenText = '-';
+          if (agent.lastSeen) {
+            const msAgo = Date.now() - new Date(agent.lastSeen).getTime();
+            if (msAgo < 60000) lastSeenText = `${Math.floor(msAgo / 1000)} sec ago`;
+            else lastSeenText = `${Math.floor(msAgo / 60000)} min ago`;
+          }
+          tr.innerHTML = `
+            <td>${agent.agentId}</td>
+            <td class="status-${agent.status.toLowerCase()}">${agent.status}</td>
+            <td>${lastSeenText}</td>
+            <td>${agent.activeTunnelsCount}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) { console.error('Failed to fetch agents:', err); }
+    }
+
+    async function fetchMappings() {
+      try {
+        const res = await fetch('/api/mappings');
+        const mappings = await res.json();
+        const tbody = document.getElementById('mappings-table');
+        tbody.innerHTML = '';
+        
+        mappings.forEach(m => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${m.publicPort}</td>
+            <td>${m.agentId}</td>
+            <td>${m.targetHost}:${m.targetPort}</td>
+            <td><button class="btn-danger" onclick="deleteMapping(${m.publicPort})">Close</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) { console.error('Failed to fetch mappings:', err); }
+    }
+
+    async function createMapping() {
+      const agentId = document.getElementById('input-agent').value;
+      const publicPort = document.getElementById('input-public-port').value;
+      const targetHost = document.getElementById('input-target-host').value;
+      const targetPort = document.getElementById('input-target-port').value;
+
+      if (!agentId || !publicPort || !targetHost || !targetPort) {
+        return alert("Please fill all fields");
+      }
+
+      try {
+        const res = await fetch('/api/mappings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId, publicPort: parseInt(publicPort), targetHost, targetPort: parseInt(targetPort) })
+        });
+        const data = await res.json();
+        
+        if (data.error) {
+          alert("Error: " + data.error);
+        } else {
+          document.getElementById('input-public-port').value = '';
+          document.getElementById('input-target-port').value = '';
+          fetchMappings();
+        }
+      } catch (err) {
+        alert("Failed to create tunnel");
+      }
+    }
+
+    async function deleteMapping(port) {
+      if (confirm(`Close tunnel on port ${port}?`)) {
+        await fetch(`/api/mappings/${port}`, { method: 'DELETE' });
+        fetchMappings();
+      }
+    }
+
+    fetchAgents();
+    fetchMappings();
+    setInterval(fetchAgents, 5000);
+    setInterval(fetchMappings, 5000);
+  </script>
+</body>
+</html>

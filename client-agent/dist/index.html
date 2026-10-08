@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remote Tunnel Agent</title>
+    <script type="module" crossorigin src="./assets/index-BndMstVj.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-lTWxbFft.css">
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Remote Tunnel Agent</h1>
+        <div id="status-badge" class="badge">Offline</div>
+      </header>
+      
+      <main>
+        <section class="info-grid">
+          <div class="info-item">
+            <span class="label">Agent ID:</span>
+            <span id="agent-id" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Cloud:</span>
+            <span id="cloud-url" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Last Heartbeat:</span>
+            <span id="last-heartbeat" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Reconnect Attempts:</span>
+            <span id="reconnect-attempts" class="value">0</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Active Tunnels:</span>
+            <span id="active-tunnels" class="value">0</span>
+          </div>
+        </section>
+
+        <section class="logs-section">
+          <h2>Logs</h2>
+          <div id="logs-container" class="logs-container"></div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
